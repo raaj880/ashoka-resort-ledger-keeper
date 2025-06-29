@@ -1,0 +1,133 @@
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TrendingUp, Save } from "lucide-react";
+import { toast } from "sonner";
+
+interface Transaction {
+  type: 'income' | 'expense';
+  source?: string;
+  category?: string;
+  amount: number;
+  date: string;
+  note?: string;
+}
+
+interface AddIncomeFormProps {
+  onAddTransaction: (transaction: Transaction) => void;
+}
+
+const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
+  const [source, setSource] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [note, setNote] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!source || !amount) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const transaction: Transaction = {
+      type: 'income',
+      source,
+      amount: parseFloat(amount),
+      date,
+      note
+    };
+
+    onAddTransaction(transaction);
+    toast.success("Income added successfully!");
+    
+    // Reset form
+    setSource("");
+    setAmount("");
+    setDate(new Date().toISOString().split('T')[0]);
+    setNote("");
+  };
+
+  return (
+    <Card className="max-w-2xl mx-auto shadow-lg">
+      <CardHeader className="bg-emerald-50">
+        <CardTitle className="flex items-center text-emerald-700">
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Add Income Entry
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="source" className="text-gray-700">Income Source *</Label>
+              <Select value={source} onValueChange={setSource} required>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select income source" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Rooms">🏠 Rooms</SelectItem>
+                  <SelectItem value="Restaurant">🍽️ Restaurant</SelectItem>
+                  <SelectItem value="Pool">🏊 Pool</SelectItem>
+                  <SelectItem value="Café">☕ Café</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount" className="text-gray-700">Amount (₹) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="h-12 text-lg"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="date" className="text-gray-700">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="note" className="text-gray-700">Note (Optional)</Label>
+            <Textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add any additional details..."
+              className="min-h-20"
+            />
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Add Income Entry
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default AddIncomeForm;
