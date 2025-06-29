@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { INCOME_SOURCES, EXPENSE_CATEGORIES } from "@/lib/constants";
+import { validatePrice, normalizeIncomeSource, normalizeExpenseCategory } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Transaction = Tables<'transactions'>;
@@ -43,7 +44,7 @@ const EditTransactionDialog = ({ transaction, open, onClose, onUpdate }: EditTra
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    if (!validatePrice(formData.amount)) {
       toast.error("Please enter a valid amount");
       return;
     }
@@ -58,9 +59,9 @@ const EditTransactionDialog = ({ transaction, open, onClose, onUpdate }: EditTra
       };
 
       if (transaction.type === 'income') {
-        updateData.source = formData.source || null;
+        updateData.source = normalizeIncomeSource(formData.source) || null;
       } else {
-        updateData.category = formData.category || null;
+        updateData.category = normalizeExpenseCategory(formData.category) || null;
       }
 
       const { error } = await supabase
@@ -132,10 +133,15 @@ const EditTransactionDialog = ({ transaction, open, onClose, onUpdate }: EditTra
                   <SelectValue placeholder="Select income source" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Rooms">🏠 Rooms</SelectItem>
-                  <SelectItem value="Restaurant">🍽️ Restaurant</SelectItem>
-                  <SelectItem value="Pool">🏊 Pool</SelectItem>
-                  <SelectItem value="Café">☕ Café</SelectItem>
+                  {INCOME_SOURCES.map(source => (
+                    <SelectItem key={source} value={source}>
+                      {source === 'Rooms' && '🏠'} 
+                      {source === 'Restaurant' && '🍽️'} 
+                      {source === 'Pool' && '🏊'} 
+                      {source === 'Café' && '☕'} 
+                      {' '}{source}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -150,14 +156,19 @@ const EditTransactionDialog = ({ transaction, open, onClose, onUpdate }: EditTra
                   <SelectValue placeholder="Select expense category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Groceries">🛒 Groceries</SelectItem>
-                  <SelectItem value="Staff Salary">👥 Staff Salary</SelectItem>
-                  <SelectItem value="Purchases">🛍️ Purchases</SelectItem>
-                  <SelectItem value="Electricity">⚡ Electricity</SelectItem>
-                  <SelectItem value="Maintenance">🔧 Maintenance</SelectItem>
-                  <SelectItem value="Marketing">📢 Marketing</SelectItem>
-                  <SelectItem value="Transportation">🚗 Transportation</SelectItem>
-                  <SelectItem value="Miscellaneous">📝 Miscellaneous</SelectItem>
+                  {EXPENSE_CATEGORIES.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category === 'Groceries' && '🛒'} 
+                      {category === 'Staff Salary' && '👥'} 
+                      {category === 'Purchases' && '🛍️'} 
+                      {category === 'Electricity' && '⚡'} 
+                      {category === 'Maintenance' && '🔧'} 
+                      {category === 'Marketing' && '📢'} 
+                      {category === 'Transportation' && '🚗'} 
+                      {category === 'Miscellaneous' && '📝'} 
+                      {' '}{category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

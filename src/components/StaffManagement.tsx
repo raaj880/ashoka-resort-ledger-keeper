@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import {
   Plus, 
   Phone, 
   Mail, 
-  MapPin, 
   Calendar,
   IndianRupee,
   Edit,
@@ -22,6 +20,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { STAFF_POSITIONS } from "@/lib/constants";
+import { formatDateForInput, formatDateForDisplay, validatePrice } from "@/lib/utils";
 
 interface Staff {
   id: string;
@@ -48,22 +48,9 @@ const StaffManagement = () => {
     address: "",
     position: "",
     salary: "",
-    hire_date: new Date().toISOString().split('T')[0],
+    hire_date: formatDateForInput(new Date()),
     status: "active" as "active" | "inactive"
   });
-
-  const positions = [
-    "Manager",
-    "Receptionist", 
-    "Chef",
-    "Waiter/Waitress",
-    "Housekeeper",
-    "Maintenance",
-    "Security Guard",
-    "Pool Attendant",
-    "Kitchen Helper",
-    "Other"
-  ];
 
   useEffect(() => {
     fetchStaff();
@@ -99,12 +86,17 @@ const StaffManagement = () => {
       return;
     }
 
+    if (!validatePrice(formData.salary)) {
+      toast.error("Please enter a valid salary amount");
+      return;
+    }
+
     try {
       const staffData = {
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email || null,
-        address: formData.address || null,
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim() || null,
+        address: formData.address.trim() || null,
         position: formData.position,
         salary: parseFloat(formData.salary),
         hire_date: formData.hire_date,
@@ -193,7 +185,7 @@ const StaffManagement = () => {
       address: "",
       position: "",
       salary: "",
-      hire_date: new Date().toISOString().split('T')[0],
+      hire_date: formatDateForInput(new Date()),
       status: "active"
     });
     setIsAddDialogOpen(false);
@@ -333,7 +325,7 @@ const StaffManagement = () => {
                           <SelectValue placeholder="Select position" />
                         </SelectTrigger>
                         <SelectContent>
-                          {positions.map(position => (
+                          {STAFF_POSITIONS.map(position => (
                             <SelectItem key={position} value={position}>{position}</SelectItem>
                           ))}
                         </SelectContent>
@@ -437,7 +429,7 @@ const StaffManagement = () => {
                         )}
                         <span className="flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
-                          Hired: {new Date(member.hire_date).toLocaleDateString()}
+                          Hired: {formatDateForDisplay(member.hire_date)}
                         </span>
                       </div>
                     </div>

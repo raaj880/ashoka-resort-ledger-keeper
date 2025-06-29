@@ -15,18 +15,17 @@ import {
   CheckCircle,
   Edit,
   Trash2,
-  TrendingDown,
   Search,
   Filter,
   Download,
-  Upload,
   RefreshCw,
   Eye,
-  ShoppingCart,
   DollarSign
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { INVENTORY_CATEGORIES, INVENTORY_UNITS } from "@/lib/constants";
+import { validatePrice } from "@/lib/utils";
 
 interface InventoryItem {
   id: string;
@@ -62,26 +61,6 @@ const InventoryManagement = () => {
     supplier: "",
     notes: ""
   });
-
-  const categories = [
-    "Food & Beverages",
-    "Cleaning Supplies", 
-    "Linens & Towels",
-    "Kitchen Equipment",
-    "Room Amenities",
-    "Maintenance Supplies",
-    "Office Supplies",
-    "Pool Chemicals",
-    "Furniture",
-    "Electronics",
-    "Safety Equipment",
-    "Other"
-  ];
-
-  const units = [
-    "pieces", "kg", "liters", "packets", "boxes", "bottles", "rolls", "sets", 
-    "meters", "grams", "ml", "dozen", "pairs", "units"
-  ];
 
   useEffect(() => {
     fetchInventory();
@@ -131,8 +110,8 @@ const InventoryManagement = () => {
       toast.error("Minimum quantity cannot be negative");
       return false;
     }
-    if (formData.unit_price && parseFloat(formData.unit_price) < 0) {
-      toast.error("Unit price cannot be negative");
+    if (formData.unit_price && !validatePrice(formData.unit_price)) {
+      toast.error("Please enter a valid unit price");
       return false;
     }
     return true;
@@ -487,7 +466,7 @@ const InventoryManagement = () => {
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories.map(category => (
+                            {INVENTORY_CATEGORIES.map(category => (
                               <SelectItem key={category} value={category}>{category}</SelectItem>
                             ))}
                           </SelectContent>
@@ -519,7 +498,7 @@ const InventoryManagement = () => {
                             <SelectValue placeholder="Select unit" />
                           </SelectTrigger>
                           <SelectContent>
-                            {units.map(unit => (
+                            {INVENTORY_UNITS.map(unit => (
                               <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                             ))}
                           </SelectContent>
