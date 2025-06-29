@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Users,
   FileText,
-  CalendarDays
+  CalendarDays,
+  Settings
 } from "lucide-react";
 import AddIncomeForm from "./AddIncomeForm";
 import AddExpenseForm from "./AddExpenseForm";
@@ -29,6 +30,8 @@ import CustomerBookings from "./CustomerBookings";
 import StaffManagement from "./StaffManagement";
 import InventoryManagement from "./InventoryManagement";
 import RoomCalendar from "./RoomCalendar";
+import RoomManagement from "./RoomManagement";
+import CalendarNavigation from "./CalendarNavigation";
 import ProfitLossReport from "./ProfitLossReport";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +55,13 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
+  const [roomStats, setRoomStats] = useState({
+    totalRooms: 0,
+    occupiedToday: 0,
+    availableToday: 0,
+    checkInsToday: 0,
+    checkOutsToday: 0
+  });
 
   // Fetch transactions from Supabase
   const fetchTransactions = async () => {
@@ -77,8 +87,66 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
+  const fetchRoomStats = async () => {
+    try {
+      // Fetch total rooms
+      const { data: rooms, error: roomsError } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('is_active', true);
+
+      if (roomsError) {
+        console.error('Error fetching rooms:', roomsError);
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Fetch today's bookings
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*')
+        .or(`check_in.eq.${today},check_out.eq.${today}`)
+        .in('status', ['confirmed', 'checked_in']);
+
+      if (bookingsError) {
+        console.error('Error fetching bookings:', bookingsError);
+        return;
+      }
+
+      const checkInsToday = bookings?.filter(b => b.check_in === today).length || 0;
+      const checkOutsToday = bookings?.filter(b => b.check_out === today).length || 0;
+
+      // Fetch room availability for today
+      const { data: availability, error: availabilityError } = await supabase
+        .from('room_availability')
+        .select('*')
+        .eq('date', today);
+
+      if (availabilityError) {
+        console.error('Error fetching availability:', availabilityError);
+        return;
+      }
+
+      const totalRooms = rooms?.length || 0;
+      const occupiedToday = availability?.filter(a => a.status === 'occupied').length || 0;
+      const availableToday = totalRooms - occupiedToday;
+
+      setRoomStats({
+        totalRooms,
+        occupiedToday,
+        availableToday,
+        checkInsToday,
+        checkOutsToday
+      });
+    } catch (error) {
+      console.error('Error fetching room stats:', error);
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
+    fetchRoomStats();
   }, []);
 
   const addTransaction = async (transaction: TransactionInput) => {
@@ -179,7 +247,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={fetchTransactions}
+                onClick={() => {
+                  fetchTransactions();
+                  fetchRoomStats();
+                }}
                 className="text-gray-600"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -196,9 +267,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 bg-white shadow-sm">
+          <TabsList className="grid w-full grid-cols-10 bg-white shadow-sm">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="rooms">Rooms</TabsTrigger>
             {hasPermission('bookings') && <TabsTrigger value="income">Add Income</TabsTrigger>}
             {hasPermission('bookings') && <TabsTrigger value="expense">Add Expense</TabsTrigger>}
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
@@ -254,6 +326,13 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
               </Card>
             </div>
 
+            {/* Calendar Navigation Component */}
+            <CalendarNavigation
+              onNavigateToCalendar={() => setActiveTab("calendar")}
+              onNavigateToBookings={() => setActiveTab("bookings")}
+              roomStats={roomStats}
+            />
+
             {/* Income by Source */}
             <Card className="shadow-lg">
               <CardHeader>
@@ -295,6 +374,20 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 </CardContent>
               </Card>
 
+              <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("rooms")}>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Settings className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">Room Management</h3>
+                      <p className="text-gray-600">Configure rooms</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {hasPermission('bookings') && (
                 <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("income")}>
                   <CardContent className="p-6">
@@ -311,28 +404,12 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                 </Card>
               )}
 
-              {hasPermission('bookings') && (
-                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("expense")}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                        <Plus className="w-6 h-6 text-red-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
-                        <p className="text-gray-600">Track costs</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {hasPermission('reports') && (
                 <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("reports")}>
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-purple-600" />
+                      <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-orange-600" />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-800">P&L Report</h3>
@@ -347,6 +424,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
           <TabsContent value="calendar">
             <RoomCalendar />
+          </TabsContent>
+
+          <TabsContent value="rooms">
+            <RoomManagement />
           </TabsContent>
 
           {hasPermission('bookings') && (
