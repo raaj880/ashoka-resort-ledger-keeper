@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingDown, Save } from "lucide-react";
 import { toast } from "sonner";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { formatDateForInput, validatePrice, normalizeExpenseCategory } from "@/lib/utils";
 
 interface TransactionInput {
   type: 'income' | 'expense';
@@ -25,7 +26,7 @@ interface AddExpenseFormProps {
 const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateForInput(new Date()));
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,8 +38,8 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
       return;
     }
 
-    if (parseFloat(amount) <= 0) {
-      toast.error("Amount must be greater than 0");
+    if (!validatePrice(amount)) {
+      toast.error("Please enter a valid amount greater than 0");
       return;
     }
 
@@ -46,7 +47,7 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
 
     const transaction: TransactionInput = {
       type: 'expense',
-      category,
+      category: normalizeExpenseCategory(category),
       amount: parseFloat(amount),
       date,
       note: note.trim() || undefined
@@ -58,7 +59,7 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
       // Reset form
       setCategory("");
       setAmount("");
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(formatDateForInput(new Date()));
       setNote("");
     } catch (error) {
       // Error is handled by the parent component
@@ -85,14 +86,19 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
                   <SelectValue placeholder="Select expense category" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="Groceries">🛒 Groceries</SelectItem>
-                  <SelectItem value="Staff Salary">👥 Staff Salary</SelectItem>
-                  <SelectItem value="Purchases">🛍️ Purchases</SelectItem>
-                  <SelectItem value="Electricity">⚡ Electricity</SelectItem>
-                  <SelectItem value="Maintenance">🔧 Maintenance</SelectItem>
-                  <SelectItem value="Marketing">📢 Marketing</SelectItem>
-                  <SelectItem value="Transportation">🚗 Transportation</SelectItem>
-                  <SelectItem value="Miscellaneous">📝 Miscellaneous</SelectItem>
+                  {EXPENSE_CATEGORIES.map(categoryOption => (
+                    <SelectItem key={categoryOption} value={categoryOption}>
+                      {categoryOption === 'Groceries' && '🛒'} 
+                      {categoryOption === 'Staff Salary' && '👥'} 
+                      {categoryOption === 'Purchases' && '🛍️'} 
+                      {categoryOption === 'Electricity' && '⚡'} 
+                      {categoryOption === 'Maintenance' && '🔧'} 
+                      {categoryOption === 'Marketing' && '📢'} 
+                      {categoryOption === 'Transportation' && '🚗'} 
+                      {categoryOption === 'Miscellaneous' && '📝'} 
+                      {' '}{categoryOption}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

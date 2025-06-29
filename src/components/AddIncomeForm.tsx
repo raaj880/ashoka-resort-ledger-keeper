@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Save } from "lucide-react";
 import { toast } from "sonner";
+import { INCOME_SOURCES } from "@/lib/constants";
+import { formatDateForInput, validatePrice, normalizeIncomeSource } from "@/lib/utils";
 
 interface TransactionInput {
   type: 'income' | 'expense';
@@ -25,7 +26,7 @@ interface AddIncomeFormProps {
 const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
   const [source, setSource] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateForInput(new Date()));
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,8 +38,8 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
       return;
     }
 
-    if (parseFloat(amount) <= 0) {
-      toast.error("Amount must be greater than 0");
+    if (!validatePrice(amount)) {
+      toast.error("Please enter a valid amount greater than 0");
       return;
     }
 
@@ -46,7 +47,7 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
 
     const transaction: TransactionInput = {
       type: 'income',
-      source,
+      source: normalizeIncomeSource(source),
       amount: parseFloat(amount),
       date,
       note: note.trim() || undefined
@@ -58,7 +59,7 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
       // Reset form
       setSource("");
       setAmount("");
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(formatDateForInput(new Date()));
       setNote("");
     } catch (error) {
       // Error is handled by the parent component
@@ -85,10 +86,15 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
                   <SelectValue placeholder="Select income source" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="Rooms">🏠 Rooms</SelectItem>
-                  <SelectItem value="Restaurant">🍽️ Restaurant</SelectItem>
-                  <SelectItem value="Pool">🏊 Pool</SelectItem>
-                  <SelectItem value="Café">☕ Café</SelectItem>
+                  {INCOME_SOURCES.map(sourceOption => (
+                    <SelectItem key={sourceOption} value={sourceOption}>
+                      {sourceOption === 'Rooms' && '🏠'} 
+                      {sourceOption === 'Restaurant' && '🍽️'} 
+                      {sourceOption === 'Pool' && '🏊'} 
+                      {sourceOption === 'Café' && '☕'} 
+                      {' '}{sourceOption}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

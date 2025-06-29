@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ROOM_TYPES, BOOKING_STATUSES } from "@/lib/constants";
+import { formatDateForInput, formatDateForDisplay, validatePrice } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -82,14 +83,6 @@ const CustomerBookings = () => {
     special_requests: ""
   });
 
-  const roomTypes = [
-    "Standard Room",
-    "Deluxe Room", 
-    "Suite",
-    "Family Room",
-    "Pool View Room"
-  ];
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -142,10 +135,10 @@ const CustomerBookings = () => {
 
     try {
       const customerData = {
-        name: customerForm.name,
-        phone: customerForm.phone,
-        email: customerForm.email || null,
-        address: customerForm.address || null
+        name: customerForm.name.trim(),
+        phone: customerForm.phone.trim(),
+        email: customerForm.email.trim() || null,
+        address: customerForm.address.trim() || null
       };
 
       if (editingCustomer) {
@@ -188,6 +181,25 @@ const CustomerBookings = () => {
       return;
     }
 
+    if (bookingForm.total_amount && !validatePrice(bookingForm.total_amount)) {
+      toast.error("Please enter a valid total amount");
+      return;
+    }
+
+    if (bookingForm.advance_paid && !validatePrice(bookingForm.advance_paid)) {
+      toast.error("Please enter a valid advance amount");
+      return;
+    }
+
+    // Validate dates
+    const checkIn = new Date(bookingForm.check_in);
+    const checkOut = new Date(bookingForm.check_out);
+    
+    if (checkOut <= checkIn) {
+      toast.error("Check-out date must be after check-in date");
+      return;
+    }
+
     try {
       const bookingData = {
         customer_id: bookingForm.customer_id,
@@ -198,7 +210,7 @@ const CustomerBookings = () => {
         total_amount: parseFloat(bookingForm.total_amount) || 0,
         advance_paid: parseFloat(bookingForm.advance_paid) || 0,
         status: bookingForm.status,
-        special_requests: bookingForm.special_requests || null
+        special_requests: bookingForm.special_requests.trim() || null
       };
 
       if (editingBooking) {
@@ -556,7 +568,7 @@ const CustomerBookings = () => {
                       <SelectValue placeholder="Select room type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roomTypes.map(type => (
+                      {ROOM_TYPES.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
@@ -636,10 +648,11 @@ const CustomerBookings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="checked_in">Checked In</SelectItem>
-                      <SelectItem value="checked_out">Checked Out</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      {BOOKING_STATUSES.map(status => (
+                        <SelectItem key={status} value={status}>
+                          {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -691,10 +704,11 @@ const CustomerBookings = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="checked_in">Checked In</SelectItem>
-                <SelectItem value="checked_out">Checked Out</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                {BOOKING_STATUSES.map(status => (
+                  <SelectItem key={status} value={status}>
+                    {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -745,7 +759,7 @@ const CustomerBookings = () => {
                         </span>
                         <span className="flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
-                          {new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}
+                          {formatDateForDisplay(booking.check_in)} - {formatDateForDisplay(booking.check_out)}
                         </span>
                       </div>
                     </div>

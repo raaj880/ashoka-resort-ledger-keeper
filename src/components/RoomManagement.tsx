@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ROOM_TYPES, AMENITIES, DEFAULT_ROOM_PRICES, DEFAULT_ROOM_CAPACITY } from "@/lib/constants";
+import { validatePrice, validateCapacity, normalizeRoomType } from "@/lib/utils";
 
 interface Room {
   id: string;
@@ -61,15 +63,26 @@ const RoomManagement = () => {
     description: ""
   });
 
-  const roomTypes = ["Standard Room", "Deluxe Room", "Suite", "Family Room", "Pool View Room"];
-  const amenityOptions = [
-    "AC", "TV", "WiFi", "Mini Fridge", "Balcony", "Pool View", 
-    "Extra Beds", "Parking", "Room Service", "Kitchenette", "Bathtub", "Safe"
-  ];
-
   useEffect(() => {
     fetchRooms();
   }, []);
+
+  // Auto-populate capacity and price when room type changes
+  useEffect(() => {
+    if (formData.room_type && !editingRoom) {
+      const roomType = formData.room_type as keyof typeof DEFAULT_ROOM_CAPACITY;
+      const defaultCapacity = DEFAULT_ROOM_CAPACITY[roomType];
+      const defaultPrice = DEFAULT_ROOM_PRICES[roomType];
+      
+      if (defaultCapacity) {
+        setFormData(prev => ({ 
+          ...prev, 
+          capacity: defaultCapacity.toString(),
+          base_price: defaultPrice.toString()
+        }));
+      }
+    }
+  }, [formData.room_type, editingRoom]);
 
   const fetchRooms = async () => {
     try {
@@ -102,14 +115,24 @@ const RoomManagement = () => {
       return;
     }
 
+    if (!validatePrice(formData.base_price)) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+
+    if (!validateCapacity(formData.capacity)) {
+      toast.error("Please enter a valid capacity (1-20 guests)");
+      return;
+    }
+
     try {
       const roomData = {
-        room_number: formData.room_number,
-        room_type: formData.room_type,
+        room_number: formData.room_number.trim(),
+        room_type: normalizeRoomType(formData.room_type),
         capacity: parseInt(formData.capacity),
         base_price: parseFloat(formData.base_price),
         amenities: formData.amenities,
-        description: formData.description || null
+        description: formData.description.trim() || null
       };
 
       if (editingRoom) {
@@ -322,7 +345,7 @@ const RoomManagement = () => {
                           <SelectValue placeholder="Select room type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {roomTypes.map(type => (
+                          {ROOM_TYPES.map(type => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                           ))}
                         </SelectContent>
@@ -337,6 +360,7 @@ const RoomManagement = () => {
                         id="capacity"
                         type="number"
                         min="1"
+                        max="20"
                         value={formData.capacity}
                         onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
                         required
@@ -359,7 +383,7 @@ const RoomManagement = () => {
                   <div>
                     <Label>Amenities</Label>
                     <div className="grid grid-cols-3 gap-2 mt-2">
-                      {amenityOptions.map(amenity => (
+                      {AMENITIES.map(amenity => (
                         <label key={amenity} className="flex items-center space-x-2">
                           <input
                             type="checkbox"
