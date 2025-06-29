@@ -9,6 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          advance_paid: number
+          check_in: string
+          check_out: string
+          created_at: string
+          customer_id: string
+          guests: number
+          id: string
+          room_type: string
+          special_requests: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          advance_paid?: number
+          check_in: string
+          check_out: string
+          created_at?: string
+          customer_id: string
+          guests?: number
+          id?: string
+          room_type: string
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          advance_paid?: number
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          customer_id?: string
+          guests?: number
+          id?: string
+          room_type?: string
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number

@@ -33,6 +33,7 @@ interface Customer {
   email?: string;
   address?: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface Booking {
@@ -48,6 +49,7 @@ interface Booking {
   status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
   special_requests?: string;
   created_at: string;
+  updated_at: string;
 }
 
 const CustomerBookings = () => {
@@ -94,13 +96,20 @@ const CustomerBookings = () => {
 
   const fetchData = async () => {
     try {
-      const [customersResult, bookingsResult] = await Promise.all([
-        supabase.from('customers').select('*').order('created_at', { ascending: false }),
-        supabase.from('bookings').select(`
+      // Fetch customers using proper type assertion
+      const customersResult = await (supabase as any)
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // Fetch bookings with customer data using proper type assertion
+      const bookingsResult = await (supabase as any)
+        .from('bookings')
+        .select(`
           *,
           customer:customers(*)
-        `).order('created_at', { ascending: false })
-      ]);
+        `)
+        .order('created_at', { ascending: false });
 
       if (customersResult.error) {
         console.error('Error fetching customers:', customersResult.error);
@@ -140,7 +149,7 @@ const CustomerBookings = () => {
       };
 
       if (editingCustomer) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('customers')
           .update(customerData)
           .eq('id', editingCustomer.id);
@@ -152,7 +161,7 @@ const CustomerBookings = () => {
 
         toast.success("Customer updated successfully");
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('customers')
           .insert([customerData]);
 
@@ -193,7 +202,7 @@ const CustomerBookings = () => {
       };
 
       if (editingBooking) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('bookings')
           .update(bookingData)
           .eq('id', editingBooking.id);
@@ -205,7 +214,7 @@ const CustomerBookings = () => {
 
         toast.success("Booking updated successfully");
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('bookings')
           .insert([bookingData]);
 
@@ -228,7 +237,7 @@ const CustomerBookings = () => {
     if (!confirm("Are you sure you want to delete this customer? This will also delete all their bookings.")) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('customers')
         .delete()
         .eq('id', id);
@@ -249,7 +258,7 @@ const CustomerBookings = () => {
     if (!confirm("Are you sure you want to delete this booking?")) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('bookings')
         .delete()
         .eq('id', id);
@@ -268,7 +277,7 @@ const CustomerBookings = () => {
 
   const updateBookingStatus = async (id: string, newStatus: "confirmed" | "checked_in" | "checked_out" | "cancelled") => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('bookings')
         .update({ status: newStatus })
         .eq('id', id);
