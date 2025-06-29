@@ -15,13 +15,16 @@ import {
   Home,
   Utensils,
   Coffee,
-  Waves
+  Waves,
+  RefreshCw
 } from "lucide-react";
 import AddIncomeForm from "./AddIncomeForm";
 import AddExpenseForm from "./AddExpenseForm";
 import DailyReport from "./DailyReport";
 import Analytics from "./Analytics";
 import { formatCurrency } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface DashboardProps {
   onLogout: () => void;
@@ -35,32 +38,64 @@ interface Transaction {
   amount: number;
   date: string;
   note?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Load transactions from localStorage
-    const savedTransactions = localStorage.getItem("ashokaTransactions");
-    if (savedTransactions) {
-      setTransactions(JSON.parse(savedTransactions));
+  // Fetch transactions from Supabase
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        toast.error('Failed to load transactions');
+        return;
+      }
+
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An error occurred while loading data');
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const saveTransactions = (newTransactions: Transaction[]) => {
-    setTransactions(newTransactions);
-    localStorage.setItem("ashokaTransactions", JSON.stringify(newTransactions));
   };
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = {
-      ...transaction,
-      id: Date.now().toString()
-    };
-    const newTransactions = [...transactions, newTransaction];
-    saveTransactions(newTransactions);
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([transaction])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding transaction:', error);
+        toast.error('Failed to add transaction');
+        return;
+      }
+
+      // Add the new transaction to the state
+      setTransactions(prev => [data, ...prev]);
+      toast.success(`${transaction.type === 'income' ? 'Income' : 'Expense'} added successfully!`);
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An error occurred while saving');
+    }
   };
 
   // Calculate today's totals
@@ -69,11 +104,11 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
   
   const todayIncome = todayTransactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + Number(t.amount), 0);
   
   const todayExpenses = todayTransactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + Number(t.amount), 0);
   
   const todayProfit = todayIncome - todayExpenses;
 
@@ -81,7 +116,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
   const incomeBySource = todayTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => {
-      acc[t.source!] = (acc[t.source!] || 0) + t.amount;
+      acc[t.source!] = (acc[t.source!] || 0) + Number(t.amount);
       return acc;
     }, {} as Record<string, number>);
 
@@ -94,6 +129,17 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       default: return <DollarSign className="w-4 h-4" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
+          <span className="text-lg text-gray-600">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50">
@@ -110,10 +156,21 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                 <p className="text-sm text-gray-500">Business Tracker</p>
               </div>
             </div>
-            <Button variant="outline" onClick={onLogout} className="text-gray-600">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fetchTransactions}
+                className="text-gray-600"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+              <Button variant="outline" onClick={onLogout} className="text-gray-600">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -27,8 +27,9 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!source || !amount) {
@@ -36,22 +37,34 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
       return;
     }
 
+    if (parseFloat(amount) <= 0) {
+      toast.error("Amount must be greater than 0");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     const transaction: Transaction = {
       type: 'income',
       source,
       amount: parseFloat(amount),
       date,
-      note
+      note: note.trim() || undefined
     };
 
-    onAddTransaction(transaction);
-    toast.success("Income added successfully!");
-    
-    // Reset form
-    setSource("");
-    setAmount("");
-    setDate(new Date().toISOString().split('T')[0]);
-    setNote("");
+    try {
+      await onAddTransaction(transaction);
+      
+      // Reset form
+      setSource("");
+      setAmount("");
+      setDate(new Date().toISOString().split('T')[0]);
+      setNote("");
+    } catch (error) {
+      // Error is handled by the parent component
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,6 +99,7 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
                 id="amount"
                 type="number"
                 step="0.01"
+                min="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
@@ -120,9 +134,10 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
           <Button 
             type="submit" 
             className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            disabled={isSubmitting}
           >
             <Save className="w-4 h-4 mr-2" />
-            Add Income Entry
+            {isSubmitting ? "Adding..." : "Add Income Entry"}
           </Button>
         </form>
       </CardContent>

@@ -27,8 +27,9 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!category || !amount) {
@@ -36,22 +37,34 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
       return;
     }
 
+    if (parseFloat(amount) <= 0) {
+      toast.error("Amount must be greater than 0");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     const transaction: Transaction = {
       type: 'expense',
       category,
       amount: parseFloat(amount),
       date,
-      note
+      note: note.trim() || undefined
     };
 
-    onAddTransaction(transaction);
-    toast.success("Expense added successfully!");
-    
-    // Reset form
-    setCategory("");
-    setAmount("");
-    setDate(new Date().toISOString().split('T')[0]);
-    setNote("");
+    try {
+      await onAddTransaction(transaction);
+      
+      // Reset form
+      setCategory("");
+      setAmount("");
+      setDate(new Date().toISOString().split('T')[0]);
+      setNote("");
+    } catch (error) {
+      // Error is handled by the parent component
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -90,6 +103,7 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
                 id="amount"
                 type="number"
                 step="0.01"
+                min="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
@@ -124,9 +138,10 @@ const AddExpenseForm = ({ onAddTransaction }: AddExpenseFormProps) => {
           <Button 
             type="submit" 
             className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-semibold"
+            disabled={isSubmitting}
           >
             <Save className="w-4 h-4 mr-2" />
-            Add Expense Entry
+            {isSubmitting ? "Adding..." : "Add Expense Entry"}
           </Button>
         </form>
       </CardContent>

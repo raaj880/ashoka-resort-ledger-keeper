@@ -15,6 +15,8 @@ interface Transaction {
   amount: number;
   date: string;
   note?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AnalyticsProps {
@@ -43,8 +45,8 @@ const Analytics = ({ transactions }: AnalyticsProps) => {
     const dateStr = date.toISOString().split('T')[0];
     
     const dayTransactions = filteredTransactions.filter(t => t.date === dateStr);
-    const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expenses = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
     
     dailyData.unshift({
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -58,7 +60,7 @@ const Analytics = ({ transactions }: AnalyticsProps) => {
   const incomeBySource = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => {
-      acc[t.source!] = (acc[t.source!] || 0) + t.amount;
+      acc[t.source!] = (acc[t.source!] || 0) + Number(t.amount);
       return acc;
     }, {} as Record<string, number>);
 
@@ -71,7 +73,7 @@ const Analytics = ({ transactions }: AnalyticsProps) => {
   const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => {
-      acc[t.category!] = (acc[t.category!] || 0) + t.amount;
+      acc[t.category!] = (acc[t.category!] || 0) + Number(t.amount);
       return acc;
     }, {} as Record<string, number>);
 
@@ -81,8 +83,8 @@ const Analytics = ({ transactions }: AnalyticsProps) => {
   }));
 
   // Calculate totals
-  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
   const totalProfit = totalIncome - totalExpenses;
 
   const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#f97316'];

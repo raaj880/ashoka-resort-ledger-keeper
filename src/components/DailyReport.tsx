@@ -16,6 +16,8 @@ interface Transaction {
   amount: number;
   date: string;
   note?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DailyReportProps {
@@ -29,11 +31,11 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
   
   const dailyIncome = filteredTransactions
     .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + Number(t.amount), 0);
   
   const dailyExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + Number(t.amount), 0);
   
   const dailyProfit = dailyIncome - dailyExpenses;
 
@@ -41,7 +43,7 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
   const incomeBySource = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => {
-      acc[t.source!] = (acc[t.source!] || 0) + t.amount;
+      acc[t.source!] = (acc[t.source!] || 0) + Number(t.amount);
       return acc;
     }, {} as Record<string, number>);
 
@@ -49,7 +51,7 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
   const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => {
-      acc[t.category!] = (acc[t.category!] || 0) + t.amount;
+      acc[t.category!] = (acc[t.category!] || 0) + Number(t.amount);
       return acc;
     }, {} as Record<string, number>);
 
@@ -58,9 +60,14 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
       {/* Date Selector */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="w-5 h-5 mr-2" />
-            Daily Report
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Daily Report
+            </div>
+            <Badge variant="outline" className="text-sm">
+              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
