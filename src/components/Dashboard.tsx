@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,10 @@ import AddIncomeForm from "./AddIncomeForm";
 import AddExpenseForm from "./AddExpenseForm";
 import DailyReport from "./DailyReport";
 import Analytics from "./Analytics";
+import TransactionHistory from "./TransactionHistory";
+import CustomerBookings from "./CustomerBookings";
+import StaffManagement from "./StaffManagement";
+import InventoryManagement from "./InventoryManagement";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
