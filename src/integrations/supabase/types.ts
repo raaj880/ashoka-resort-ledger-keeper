@@ -92,6 +92,90 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_updated: string
+          min_quantity: number
+          name: string
+          notes: string | null
+          quantity: number
+          supplier: string | null
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          min_quantity?: number
+          name: string
+          notes?: string | null
+          quantity: number
+          supplier?: string | null
+          unit: string
+          unit_price?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          min_quantity?: number
+          name?: string
+          notes?: string | null
+          quantity?: number
+          supplier?: string | null
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          hire_date: string
+          id: string
+          name: string
+          phone: string
+          position: string
+          salary: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          hire_date?: string
+          id?: string
+          name: string
+          phone: string
+          position: string
+          salary: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          hire_date?: string
+          id?: string
+          name?: string
+          phone?: string
+          position?: string
+          salary?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
