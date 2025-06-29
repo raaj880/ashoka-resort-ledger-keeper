@@ -7,18 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, FileText, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  source?: string;
-  category?: string;
-  amount: number;
-  date: string;
-  note?: string;
-  created_at: string;
-  updated_at: string;
-}
+type Transaction = Tables<'transactions'>;
 
 interface DailyReportProps {
   transactions: Transaction[];
@@ -43,7 +34,9 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
   const incomeBySource = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => {
-      acc[t.source!] = (acc[t.source!] || 0) + Number(t.amount);
+      if (t.source) {
+        acc[t.source] = (acc[t.source] || 0) + Number(t.amount);
+      }
       return acc;
     }, {} as Record<string, number>);
 
@@ -51,7 +44,9 @@ const DailyReport = ({ transactions }: DailyReportProps) => {
   const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => {
-      acc[t.category!] = (acc[t.category!] || 0) + Number(t.amount);
+      if (t.category) {
+        acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
+      }
       return acc;
     }, {} as Record<string, number>);
 

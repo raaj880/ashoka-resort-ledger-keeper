@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, Save } from "lucide-react";
 import { toast } from "sonner";
 
-interface Transaction {
+interface TransactionInput {
   type: 'income' | 'expense';
   source?: string;
   category?: string;
@@ -19,7 +19,7 @@ interface Transaction {
 }
 
 interface AddIncomeFormProps {
-  onAddTransaction: (transaction: Transaction) => void;
+  onAddTransaction: (transaction: TransactionInput) => void;
 }
 
 const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
@@ -44,7 +44,7 @@ const AddIncomeForm = ({ onAddTransaction }: AddIncomeFormProps) => {
 
     setIsSubmitting(true);
 
-    const transaction: Transaction = {
+    const transaction: TransactionInput = {
       type: 'income',
       source,
       amount: parseFloat(amount),

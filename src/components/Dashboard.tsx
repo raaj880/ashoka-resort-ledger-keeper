@@ -25,21 +25,21 @@ import Analytics from "./Analytics";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 
 interface DashboardProps {
   onLogout: () => void;
 }
 
-interface Transaction {
-  id: string;
+type Transaction = Tables<'transactions'>;
+
+interface TransactionInput {
   type: 'income' | 'expense';
   source?: string;
   category?: string;
   amount: number;
   date: string;
   note?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
@@ -75,7 +75,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     fetchTransactions();
   }, []);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>) => {
+  const addTransaction = async (transaction: TransactionInput) => {
     try {
       const { data, error } = await supabase
         .from('transactions')
@@ -116,7 +116,9 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
   const incomeBySource = todayTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => {
-      acc[t.source!] = (acc[t.source!] || 0) + Number(t.amount);
+      if (t.source) {
+        acc[t.source] = (acc[t.source] || 0) + Number(t.amount);
+      }
       return acc;
     }, {} as Record<string, number>);
 
