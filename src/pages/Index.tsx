@@ -15,10 +15,15 @@ const Index = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      const success = await login(username, password);
+      const success = await login(username.trim(), password);
       if (!success) {
         setPassword("");
       }
@@ -67,6 +72,7 @@ const Index = () => {
                   className="h-12"
                   required
                   disabled={isSubmitting}
+                  autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
@@ -80,18 +86,21 @@ const Index = () => {
                   className="h-12"
                   required
                   disabled={isSubmitting}
+                  autoComplete="current-password"
                 />
               </div>
               <Button 
                 type="submit" 
                 className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !username.trim() || !password.trim()}
               >
                 <Lock className="w-4 h-4 mr-2" />
                 {isSubmitting ? "Logging in..." : "Login to Dashboard"}
               </Button>
               <div className="text-center text-sm text-gray-500 mt-4">
-                Default: admin / ashoka123
+                <p>Default credentials:</p>
+                <p><strong>Username:</strong> admin</p>
+                <p><strong>Password:</strong> ashoka123</p>
               </div>
             </form>
           </CardContent>
