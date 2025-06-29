@@ -155,7 +155,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">Ashoka Resort</h1>
-                <p className="text-sm text-gray-500">Business Tracker</p>
+                <p className="text-sm text-gray-500">Business Management System</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -179,10 +179,14 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
+          <TabsList className="grid w-full grid-cols-7 bg-white shadow-sm">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="income">Add Income</TabsTrigger>
             <TabsTrigger value="expense">Add Expense</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
+            <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
@@ -295,6 +299,25 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
           <TabsContent value="expense">
             <AddExpenseForm onAddTransaction={addTransaction} />
+          </TabsContent>
+
+          <TabsContent value="transactions">
+            <TransactionHistory 
+              transactions={transactions} 
+              onTransactionUpdate={fetchTransactions}
+            />
+          </TabsContent>
+
+          <TabsContent value="bookings">
+            <CustomerBookings />
+          </TabsContent>
+
+          <TabsContent value="staff">
+            <StaffManagement />
+          </TabsContent>
+
+          <TabsContent value="inventory">
+            <InventoryManagement />
           </TabsContent>
 
           <TabsContent value="reports">
