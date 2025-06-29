@@ -15,7 +15,10 @@ import {
   Utensils,
   Coffee,
   Waves,
-  RefreshCw
+  RefreshCw,
+  Users,
+  FileText,
+  CalendarDays
 } from "lucide-react";
 import AddIncomeForm from "./AddIncomeForm";
 import AddExpenseForm from "./AddExpenseForm";
@@ -25,14 +28,13 @@ import TransactionHistory from "./TransactionHistory";
 import CustomerBookings from "./CustomerBookings";
 import StaffManagement from "./StaffManagement";
 import InventoryManagement from "./InventoryManagement";
+import RoomCalendar from "./RoomCalendar";
+import ProfitLossReport from "./ProfitLossReport";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import type { Tables } from "@/integrations/supabase/types";
-
-interface DashboardProps {
-  onLogout: () => void;
-}
 
 type Transaction = Tables<'transactions'>;
 
@@ -45,7 +47,8 @@ interface TransactionInput {
   note?: string;
 }
 
-const Dashboard = ({ onLogout }: DashboardProps) => {
+const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
+  const { user, logout, hasPermission } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
@@ -99,6 +102,11 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       console.error('Error:', error);
       toast.error('An error occurred while saving');
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    onLogout();
   };
 
   // Calculate today's totals
@@ -162,6 +170,12 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              {user && (
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-700">{user.full_name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user.role.role_name}</p>
+                </div>
+              )}
               <Button 
                 variant="outline" 
                 size="sm"
@@ -171,7 +185,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Button variant="outline" onClick={onLogout} className="text-gray-600">
+              <Button variant="outline" onClick={handleLogout} className="text-gray-600">
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
@@ -182,15 +196,16 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-white shadow-sm">
+          <TabsList className="grid w-full grid-cols-9 bg-white shadow-sm">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="income">Add Income</TabsTrigger>
-            <TabsTrigger value="expense">Add Expense</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            {hasPermission('bookings') && <TabsTrigger value="income">Add Income</TabsTrigger>}
+            {hasPermission('bookings') && <TabsTrigger value="expense">Add Expense</TabsTrigger>}
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            {hasPermission('bookings') && <TabsTrigger value="bookings">Bookings</TabsTrigger>}
+            {hasPermission('staff') && <TabsTrigger value="staff">Staff</TabsTrigger>}
+            {hasPermission('inventory') && <TabsTrigger value="inventory">Inventory</TabsTrigger>}
+            {hasPermission('reports') && <TabsTrigger value="reports">Reports</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -265,44 +280,86 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("income")}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("calendar")}>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-emerald-600" />
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <CalendarDays className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Add Income</h3>
-                      <p className="text-gray-600">Record revenue from rooms, restaurant, etc.</p>
+                      <h3 className="text-lg font-semibold text-gray-800">Room Calendar</h3>
+                      <p className="text-gray-600">Manage room availability</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("expense")}>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-red-600" />
+              {hasPermission('bookings') && (
+                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("income")}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <Plus className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Add Income</h3>
+                        <p className="text-gray-600">Record revenue</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
-                      <p className="text-gray-600">Track operational costs and purchases</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {hasPermission('bookings') && (
+                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("expense")}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <Plus className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Add Expense</h3>
+                        <p className="text-gray-600">Track costs</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {hasPermission('reports') && (
+                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveTab("reports")}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">P&L Report</h3>
+                        <p className="text-gray-600">Financial insights</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="income">
-            <AddIncomeForm onAddTransaction={addTransaction} />
+          <TabsContent value="calendar">
+            <RoomCalendar />
           </TabsContent>
 
-          <TabsContent value="expense">
-            <AddExpenseForm onAddTransaction={addTransaction} />
-          </TabsContent>
+          {hasPermission('bookings') && (
+            <TabsContent value="income">
+              <AddIncomeForm onAddTransaction={addTransaction} />
+            </TabsContent>
+          )}
+
+          {hasPermission('bookings') && (
+            <TabsContent value="expense">
+              <AddExpenseForm onAddTransaction={addTransaction} />
+            </TabsContent>
+          )}
 
           <TabsContent value="transactions">
             <TransactionHistory 
@@ -311,24 +368,33 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             />
           </TabsContent>
 
-          <TabsContent value="bookings">
-            <CustomerBookings />
-          </TabsContent>
+          {hasPermission('bookings') && (
+            <TabsContent value="bookings">
+              <CustomerBookings />
+            </TabsContent>
+          )}
 
-          <TabsContent value="staff">
-            <StaffManagement />
-          </TabsContent>
+          {hasPermission('staff') && (
+            <TabsContent value="staff">
+              <StaffManagement />
+            </TabsContent>
+          )}
 
-          <TabsContent value="inventory">
-            <InventoryManagement />
-          </TabsContent>
+          {hasPermission('inventory') && (
+            <TabsContent value="inventory">
+              <InventoryManagement />
+            </TabsContent>
+          )}
 
-          <TabsContent value="reports">
-            <div className="space-y-6">
-              <DailyReport transactions={transactions} />
-              <Analytics transactions={transactions} />
-            </div>
-          </TabsContent>
+          {hasPermission('reports') && (
+            <TabsContent value="reports">
+              <div className="space-y-6">
+                <ProfitLossReport />
+                <DailyReport transactions={transactions} />
+                <Analytics transactions={transactions} />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

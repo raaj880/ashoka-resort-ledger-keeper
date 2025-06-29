@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,43 +5,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Lock } from "lucide-react";
 import Dashboard from "@/components/Dashboard";
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isAuthenticated, isLoading, login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    // Check if already logged in
-    const loginStatus = localStorage.getItem("ashokaLogin");
-    if (loginStatus === "true") {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    // Simple authentication - in real app, this would be more secure
-    if (username === "admin" && password === "ashoka123") {
-      setIsLoggedIn(true);
-      localStorage.setItem("ashokaLogin", "true");
-      toast.success("Welcome to Ashoka Resort Dashboard!");
-    } else {
-      toast.error("Invalid credentials. Please try again.");
+    try {
+      const success = await login(username, password);
+      if (!success) {
+        setPassword("");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem("ashokaLogin");
     setUsername("");
     setPassword("");
-    toast.success("Logged out successfully");
   };
 
-  if (!isLoggedIn) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur">
@@ -52,7 +50,7 @@ const Index = () => {
             </div>
             <div>
               <CardTitle className="text-2xl font-bold text-gray-800">Ashoka Resort</CardTitle>
-              <p className="text-gray-600 mt-2">Daily Business Tracker</p>
+              <p className="text-gray-600 mt-2">Business Management System</p>
               <p className="text-sm text-gray-500">Gangavati, Near Hampi</p>
             </div>
           </CardHeader>
@@ -68,6 +66,7 @@ const Index = () => {
                   placeholder="Enter username"
                   className="h-12"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -80,14 +79,16 @@ const Index = () => {
                   placeholder="Enter password"
                   className="h-12"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
               <Button 
                 type="submit" 
                 className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                disabled={isSubmitting}
               >
                 <Lock className="w-4 h-4 mr-2" />
-                Login to Dashboard
+                {isSubmitting ? "Logging in..." : "Login to Dashboard"}
               </Button>
               <div className="text-center text-sm text-gray-500 mt-4">
                 Default: admin / ashoka123
